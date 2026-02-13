@@ -20,6 +20,7 @@ Modules:
     - http_client: HTTP client with layered fallback
     - safe_exec: Safe code execution engine
     - ai: AI provider modules (OpenRouter, rate limiting, model selection)
+    - memory: Memory system (storage, context, optimization, indexing)
 
 Author: JARVIS AI System
 Version: 14.0.0
@@ -32,10 +33,12 @@ __platform__ = "Termux"
 
 # Subpackages
 from . import ai
+from . import memory
 
 # Core modules - lazy imports for memory
 __all__ = [
     'ai',
+    'memory',
     'bulletproof_imports',
     'http_client', 
     'safe_exec',
@@ -63,3 +66,18 @@ def get_ai_client(api_key: str = None):
     if api_key:
         return OpenRouterClient(api_key=api_key)
     return OpenRouterClient()
+
+def get_memory_system():
+    """Get memory storage instance"""
+    from .memory import get_storage
+    return get_storage()
+
+def get_context_system():
+    """Get context manager instance"""
+    from .memory import get_context_manager
+    return get_context_manager()
+
+def get_memory_monitor():
+    """Get memory optimizer instance"""
+    from .memory import get_memory_optimizer
+    return get_memory_optimizer()
