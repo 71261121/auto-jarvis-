@@ -6,10 +6,10 @@
 # Device: Realme 2 Pro Lite | RAM: 4GB | Platform: Termux
 #
 # One-line install command:
-#   curl -fsSL https://raw.githubusercontent.com/jarvis/jarvis-v14/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/71261121/auto-jarvis-/main/install/install.sh | bash
 #
 # Or:
-#   wget -qO- https://raw.githubusercontent.com/jarvis/jarvis-v14/main/install.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/71261121/auto-jarvis-/main/install/install.sh | bash
 #
 
 set -e  # Exit on error
@@ -64,7 +64,7 @@ print_error() {
 
 JARVIS_DIR="$HOME/.jarvis"
 INSTALL_DIR="$HOME/jarvis_v14_ultimate"
-GITHUB_REPO="https://github.com/jarvis/jarvis-v14"
+GITHUB_REPO="https://github.com/71261121/auto-jarvis-"
 PYTHON_MIN_VERSION="3.9"
 MIN_MEMORY_MB=512
 

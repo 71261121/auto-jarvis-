@@ -94,14 +94,14 @@ JARVIS v14 Ultimate is a revolutionary AI assistant designed specifically for mo
 
 ```bash
 # One-line installation
-curl -fsSL https://raw.githubusercontent.com/jarvis/jarvis-v14/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/71261121/auto-jarvis-/main/install/install.sh | bash
 ```
 
 Or manually:
 
 ```bash
 # Clone repository
-git clone https://github.com/jarvis/jarvis-v14.git ~/jarvis_v14_ultimate
+git clone https://github.com/71261121/auto-jarvis-.git ~/jarvis_v14_ultimate
 cd ~/jarvis_v14_ultimate
 
 # Install dependencies
@@ -301,8 +301,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Support
 
 - 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/jarvis/jarvis-v14/issues)
-- 💬 [Discussions](https://github.com/jarvis/jarvis-v14/discussions)
+- 🐛 [Issue Tracker](https://github.com/71261121/auto-jarvis-/issues)
+- 💬 [Discussions](https://github.com/71261121/auto-jarvis-/discussions)
 
 ---
 
