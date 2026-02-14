@@ -1202,14 +1202,14 @@ class ChatStorage:
             for conn in self._pool:
                 try:
                     conn.close()
-                except:
+                except Exception:
                     pass
             self._pool.clear()
         
         if hasattr(self._local_conn, 'conn'):
             try:
                 self._local_conn.conn.close()
-            except:
+            except Exception:
                 pass
             delattr(self._local_conn, 'conn')
         
@@ -1345,7 +1345,7 @@ def self_test() -> Dict[str, Any]:
                 wal_file = temp_db + ext
                 if os.path.exists(wal_file):
                     os.unlink(wal_file)
-        except:
+        except Exception:
             pass
     
     return results

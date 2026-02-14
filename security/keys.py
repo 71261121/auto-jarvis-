@@ -363,7 +363,7 @@ class KeyStorage:
 
         try:
             decoded = base64.b64decode(data)
-        except:
+        except Exception:
             return b""
 
         key_stream = hashlib.sha256(master_key).digest()
@@ -615,7 +615,7 @@ class KeyAccessAudit:
                 entry = json.loads(line.strip())
                 if key_id is None or entry.get('key_id') == key_id:
                     entries.append(entry)
-            except:
+            except Exception:
                 continue
 
         return entries

@@ -1120,7 +1120,7 @@ class CodeAnalyzer:
                 cyclomatic=calc.cyclomatic,
                 cognitive=calc.cognitive,
             )
-        except:
+        except Exception:
             return ComplexityMetrics()
     
     def find_issues(self, code: str) -> List[CodeIssue]:
@@ -1142,7 +1142,7 @@ class CodeAnalyzer:
             issues.extend(detector.check_unused_imports())
             
             return issues
-        except:
+        except Exception:
             return []
     
     def get_stats(self) -> Dict[str, Any]:

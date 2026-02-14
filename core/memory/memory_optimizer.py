@@ -206,7 +206,7 @@ def estimate_object_size(obj: Any) -> int:
     
     try:
         return _estimate(obj)
-    except:
+    except Exception:
         return 0
 
 

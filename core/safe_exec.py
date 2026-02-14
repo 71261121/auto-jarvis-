@@ -139,7 +139,7 @@ class SafeExecutor:
                     safe_builtins[k] = __builtins__.get(k)
                 else:
                     safe_builtins[k] = getattr(__builtins__, k, None)
-            except:
+            except Exception:
                 pass
         # Ensure print is available
         safe_builtins['print'] = print

@@ -48,7 +48,7 @@ except ImportError:
 try:
     import hashlib as hashlib_module
     SCRYPT_AVAILABLE = hasattr(hashlib_module, 'scrypt')
-except:
+except Exception:
     SCRYPT_AVAILABLE = False
 
 # Constants
@@ -349,7 +349,7 @@ class BcryptHasher(PasswordHasher):
         if BCRYPT_AVAILABLE and hash.startswith('$2'):
             try:
                 return bcrypt.checkpw(b'', hash.encode('utf-8')) or False
-            except:
+            except Exception:
                 pass
         return False
 
