@@ -23,7 +23,11 @@ import time
 import json
 import tempfile
 import shutil
+import uuid
 from datetime import datetime, timedelta
+
+# Generate unique test IDs for this run
+TEST_RUN_ID = str(uuid.uuid4())[:8]
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -130,30 +134,33 @@ def run_tests():
     def test_auth_user_creation():
         """Test user creation"""
         auth = Authenticator()
+        unique_user = f"testuser_{TEST_RUN_ID}"
         success, msg, user = auth.create_user(
-            username="testuser",
+            username=unique_user,
             password="SecureP@ss2024!",
-            email="testuser@jarvis.local"
+            email=f"{unique_user}@jarvis.local"
         )
         assert success, f"User creation failed: {msg}"
         assert user is not None
-        assert user.username == "testuser"
+        assert user.username == unique_user
 
     def test_auth_authentication():
         """Test authentication"""
         auth = Authenticator()
-        auth.create_user("authuser", "SecureAuth@2024!", "authuser@jarvis.local")
+        unique_user = f"authuser_{TEST_RUN_ID}"
+        auth.create_user(unique_user, "SecureAuth@2024!", f"{unique_user}@jarvis.local")
 
-        result = auth.authenticate("authuser", "SecureAuth@2024!")
+        result = auth.authenticate(unique_user, "SecureAuth@2024!")
         assert result.success, f"Authentication failed: {result.message}"
         assert result.session is not None
 
     def test_auth_wrong_password():
         """Test authentication with wrong password"""
         auth = Authenticator()
-        auth.create_user("wrongpassuser", "SecureP@ss2024!", "wrongpass@jarvis.local")
+        unique_user = f"wrongpass_{TEST_RUN_ID}"
+        auth.create_user(unique_user, "SecureP@ss2024!", f"{unique_user}@jarvis.local")
 
-        result = auth.authenticate("wrongpassuser", "WrongPassword")
+        result = auth.authenticate(unique_user, "WrongPassword")
         assert not result.success
         assert result.status == AuthStatus.FAILED
 
@@ -618,12 +625,13 @@ print("Multiple lines")
         logger.start()
 
         auth = Authenticator()
-        auth.create_user("intuser2", "SecureInt@2024!", "intuser2@jarvis.local")
+        unique_user = f"intuser_{TEST_RUN_ID}"
+        auth.create_user(unique_user, "SecureInt@2024!", f"{unique_user}@jarvis.local")
 
-        result = auth.authenticate("intuser2", "SecureInt@2024!")
+        result = auth.authenticate(unique_user, "SecureInt@2024!")
 
         # Log auth event
-        logger.log_auth_success("intuser2", "192.168.1.1", result.session.session_id if result.session else None)
+        logger.log_auth_success(unique_user, "192.168.1.1", result.session.session_id if result.session else None)
 
         time.sleep(1.0)
 
