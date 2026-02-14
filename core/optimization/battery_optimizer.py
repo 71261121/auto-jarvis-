@@ -50,7 +50,7 @@ class PollingManager:
         self.base_interval = base_interval
         self.max_interval = max_interval
         self._current_interval = base_interval
-        self._callbacks: Dict[str, Callable] = {}
+        self._callbacks: Dict[str, Dict[str, Any]] = {}  # Fixed: was Dict[str, Callable]
         self._last_activity: Dict[str, float] = {}
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -60,7 +60,7 @@ class PollingManager:
         self._callbacks[name] = {
             'callback': callback,
             'interval': interval or self.base_interval,
-            'last_run': 0
+            'last_run': 0.0
         }
     
     def unregister(self, name: str) -> None:
@@ -276,19 +276,29 @@ class BackgroundTaskScheduler:
         while self._running:
             now = datetime.now()
             
+            # Collect tasks to run outside the lock to prevent deadlock
+            tasks_to_run = []
             with self._lock:
                 for task in list(self._tasks.values()):
                     if task.next_run <= now:
-                        try:
-                            task.callback()
-                            task.last_run = now
-                            
-                            if task.recurring and task.interval:
-                                task.next_run = now + task.interval
-                            else:
-                                del self._tasks[task.task_id]
-                        except Exception:
-                            pass
+                        tasks_to_run.append((task.task_id, task.callback))
+                        
+                        if task.recurring and task.interval:
+                            task.next_run = now + task.interval
+                        else:
+                            # Mark for removal after execution
+                            del self._tasks[task.task_id]
+            
+            # Execute tasks outside the lock
+            for task_id, callback in tasks_to_run:
+                try:
+                    callback()
+                    # Update last_run inside lock
+                    with self._lock:
+                        if task_id in self._tasks:
+                            self._tasks[task_id].last_run = now
+                except Exception:
+                    pass
             
             time.sleep(1.0)
 

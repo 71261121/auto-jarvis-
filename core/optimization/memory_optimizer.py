@@ -408,8 +408,11 @@ class MemoryEfficientDict(Generic[K, V]):
         
         # Memory limit (approximate)
         # Rough estimate: each entry is ~100 bytes overhead
+        # Prevent infinite loop if max_memory_mb is 0 or negative
+        if self._max_memory_mb <= 0:
+            return
         estimated_mb = len(self._data) * 0.0001  # 100 bytes per entry
-        while estimated_mb > self._max_memory_mb:
+        while estimated_mb > self._max_memory_mb and len(self._data) > 0:
             self._data.popitem(last=False)
             estimated_mb = len(self._data) * 0.0001
     
@@ -633,7 +636,7 @@ class GCManager:
     
     def hint_collection(self, generation: int = 0) -> int:
         """Hint that collection might be beneficial"""
-        return gc.collect(geration=generation)
+        return gc.collect(generation=generation)
     
     def force_full_collection(self) -> Tuple[int, int, int]:
         """Force full collection of all generations"""

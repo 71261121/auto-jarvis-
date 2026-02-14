@@ -624,7 +624,13 @@ def verify_all_phase_tests():
             output = proc.stdout.lower()
             
             import re
+            # Try multiple patterns to match different test output formats
             m = re.search(r'passed[:\s]*(\d+).*failed[:\s]*(\d+)', output)
+            if not m:
+                m = re.search(r'(\d+)\s*passed.*(\d+)\s*failed', output)
+            if not m:
+                m = re.search(r'(\d+)\s*passed[,\s]*(\d+)\s*failed', output)
+            
             if m:
                 total_passed += int(m.group(1))
                 total_failed += int(m.group(2))

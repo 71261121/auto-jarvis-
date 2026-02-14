@@ -156,26 +156,40 @@ class LogRotator:
         """Remove old rotated files"""
         cleaned = 0
         base = Path(base_path)
-        pattern = f"{base.name}.*"
+        # Use the parent directory and base filename safely
+        parent_dir = base.parent
+        base_name = base.name
         
-        # Find all rotated files
-        rotated_files = sorted(
-            base.parent.glob(pattern),
-            key=lambda p: p.stat().st_mtime
-        )
+        # Find all rotated files - use explicit pattern instead of variable
+        try:
+            rotated_files = sorted(
+                parent_dir.glob(f"{base_name}.*"),
+                key=lambda p: p.stat().st_mtime
+            )
+        except Exception:
+            return 0
         
         # Remove files exceeding max count
         while len(rotated_files) > self.max_files:
             old_file = rotated_files.pop(0)
-            old_file.unlink()
-            cleaned += 1
+            try:
+                old_file.unlink()
+                cleaned += 1
+            except Exception:
+                pass
         
         # Remove files exceeding age
         cutoff = datetime.now() - timedelta(days=self.max_age_days)
-        for f in base.parent.glob(f"{pattern}.gz"):
-            if datetime.fromtimestamp(f.stat().st_mtime) < cutoff:
-                f.unlink()
-                cleaned += 1
+        try:
+            for f in parent_dir.glob(f"{base_name}.*.gz"):
+                try:
+                    if datetime.fromtimestamp(f.stat().st_mtime) < cutoff:
+                        f.unlink()
+                        cleaned += 1
+                except Exception:
+                    pass
+        except Exception:
+            pass
         
         return cleaned
     

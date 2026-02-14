@@ -82,16 +82,20 @@ class AsyncIOManager:
 class ConnectionPool(Generic[T]):
     """Generic connection pool"""
     
-    def __init__(self, factory: Callable[[], T], max_size: int = 10):
+    def __init__(self, factory: Callable[[], T], max_size: int = 10, timeout: float = 30.0):
         self._factory = factory
         self._max_size = max_size
+        self._timeout = timeout  # Maximum wait time in seconds
         self._pool: deque = deque(maxlen=max_size)
         self._in_use: int = 0
         self._lock = threading.Lock()
         self._created: int = 0
     
-    def acquire(self) -> T:
-        """Acquire a connection"""
+    def acquire(self, timeout: Optional[float] = None) -> T:
+        """Acquire a connection with timeout"""
+        actual_timeout = timeout if timeout is not None else self._timeout
+        start_time = time.time()
+        
         with self._lock:
             if self._pool:
                 self._in_use += 1
@@ -102,8 +106,12 @@ class ConnectionPool(Generic[T]):
                 self._in_use += 1
                 return self._factory()
         
-        # Wait for available connection
+        # Wait for available connection with timeout
         while True:
+            elapsed = time.time() - start_time
+            if elapsed >= actual_timeout:
+                raise TimeoutError(f"Connection pool exhausted after {actual_timeout}s")
+            
             time.sleep(0.01)
             with self._lock:
                 if self._pool:
@@ -280,10 +288,10 @@ class PerformanceOptimizer:
 
 # Decorators
 def cached(ttl_seconds: int = 60):
-    """Caching decorator"""
-    cache: Dict = {}
-    
+    """Caching decorator - each decorated function gets its own cache"""
     def decorator(func: Callable) -> Callable:
+        cache: Dict = {}  # Each function gets its own cache
+        
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             key = (args, frozenset(kwargs.items()))

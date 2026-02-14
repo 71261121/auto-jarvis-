@@ -163,10 +163,14 @@ class ResponseCache:
                 return
             if 'max-age' in cc:
                 try:
-                    max_age = int(cc.split('max-age=')[1].split(',')[0])
+                    # Safer parsing of max-age
+                    max_age_str = cc.split('max-age=')[1]
+                    # Get the value before any comma or next directive
+                    max_age_value = max_age_str.split(',')[0].split(';')[0].strip()
+                    max_age = int(max_age_value)
                     cache_ttl = min(cache_ttl, max_age)
-                except Exception:
-                    pass
+                except (ValueError, IndexError):
+                    pass  # Use default TTL if parsing fails
         
         entry = CacheEntry(
             data=data,
