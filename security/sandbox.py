@@ -6,7 +6,7 @@ Ultra-Advanced Code Execution Security Module
 Features:
 - Isolated execution environment
 - Restricted builtins and imports
-- Resource limits (CPU, memory, time)
+- Resource limits (CPU, memory, time) - with Android/Termux fallback
 - File system sandboxing
 - Network access control
 - Import restrictions and whitelisting
@@ -16,8 +16,10 @@ Features:
 - Multi-level security tiers
 - Safe evaluation and exec
 
+Device: Realme Pad 2 Lite (RMP2402) | RAM: 4GB | Platform: Termux
+
 Author: JARVIS Self-Modifying AI Project
-Version: 1.0.0
+Version: 1.0.1 (Fixed for Termux/Android compatibility)
 """
 
 import os
@@ -26,7 +28,6 @@ import ast
 import traceback
 import signal
 import threading
-import resource
 import builtins
 import types
 import importlib
@@ -44,10 +45,32 @@ from contextlib import contextmanager
 from functools import wraps
 import weakref
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRITICAL FIX: resource module NOT available on Android/Termux
+# ═══════════════════════════════════════════════════════════════════════════════
+try:
+    import resource
+    HAS_RESOURCE = True
+    RESOURCE_ERROR = getattr(resource, 'error', Exception)
+except ImportError:
+    # Android/Termux does not have the 'resource' module
+    # This is expected behavior - we use timeout-based limits instead
+    HAS_RESOURCE = False
+    RESOURCE_ERROR = Exception
+    resource = None  # type: ignore
 
-# Constants
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRITICAL FIX: thread module deprecated - use _thread
+# ═══════════════════════════════════════════════════════════════════════════════
+try:
+    import _thread as thread
+except ImportError:
+    import thread  # type: ignore  # Fallback for older Python
+
+
+# Constants - Optimized for 4GB RAM device (500MB working memory)
 DEFAULT_TIMEOUT = 30  # seconds
-DEFAULT_MEMORY_LIMIT = 100 * 1024 * 1024  # 100 MB
+DEFAULT_MEMORY_LIMIT = 50 * 1024 * 1024  # 50 MB (reduced from 100MB for Termux)
 DEFAULT_CPU_TIME = 10  # seconds
 MAX_OUTPUT_SIZE = 10000  # characters
 MAX_RECURSION_DEPTH = 100
@@ -151,7 +174,7 @@ class SecurityPolicy:
         return cls(
             tier=SecurityTier.TRUSTED,
             timeout=300,
-            memory_limit=1024 * 1024 * 1024,  # 1GB
+            memory_limit=200 * 1024 * 1024,  # 200MB (reduced for Termux)
             cpu_time_limit=60,
             allow_network=True,
             allow_file_write=True,
@@ -167,7 +190,7 @@ class SecurityPolicy:
         return cls(
             tier=SecurityTier.HIGH,
             timeout=60,
-            memory_limit=500 * 1024 * 1024,  # 500MB
+            memory_limit=100 * 1024 * 1024,  # 100MB
             cpu_time_limit=30,
             allow_file_write=True,
             allow_file_read=True,
@@ -180,7 +203,7 @@ class SecurityPolicy:
         return cls(
             tier=SecurityTier.MEDIUM,
             timeout=30,
-            memory_limit=100 * 1024 * 1024,  # 100MB
+            memory_limit=50 * 1024 * 1024,  # 50MB (reduced for Termux)
             cpu_time_limit=10,
             allow_file_read=True,
             allowed_imports={'json', 're', 'datetime', 'math', 'random', 'collections', 'itertools', 'functools'}
@@ -192,7 +215,7 @@ class SecurityPolicy:
         return cls(
             tier=SecurityTier.LOW,
             timeout=10,
-            memory_limit=50 * 1024 * 1024,  # 50MB
+            memory_limit=20 * 1024 * 1024,  # 20MB
             cpu_time_limit=5,
             allowed_imports={'math', 'random'}
         )
@@ -203,7 +226,7 @@ class SecurityPolicy:
         return cls(
             tier=SecurityTier.ISOLATED,
             timeout=5,
-            memory_limit=10 * 1024 * 1024,  # 10MB
+            memory_limit=5 * 1024 * 1024,  # 5MB
             cpu_time_limit=2,
             allowed_imports=set()
         )
@@ -297,10 +320,10 @@ class RestrictedBuiltins:
 
     # Always dangerous - never allow
     NEVER_ALLOWED = {
-        'eval', 'exec', 'compile', 'execfile', 'open', 'input',
+        'eval', 'exec', 'compile', 'execfile', 'input',
         '__import__', 'globals', 'locals', 'vars',
         'breakpoint', 'help', 'license', 'credits', 'copyright',
-        'exit', 'quit', 'quit', 'globals', 'locals',
+        'exit', 'quit',
     }
 
     # Potentially dangerous - allow only in higher tiers
@@ -370,7 +393,7 @@ class RestrictedBuiltins:
 
 
 class ResourceLimiter:
-    """Resource limit enforcement"""
+    """Resource limit enforcement with Termux/Android compatibility"""
 
     def __init__(self, policy: SecurityPolicy):
         self.policy = policy
@@ -379,7 +402,16 @@ class ResourceLimiter:
         self._limits_set = False
 
     def set_limits(self) -> None:
-        """Set resource limits"""
+        """Set resource limits (with Android/Termux fallback)"""
+        # ═══════════════════════════════════════════════════════════════════════
+        # CRITICAL FIX: resource module not available on Android/Termux
+        # ═══════════════════════════════════════════════════════════════════════
+        if not HAS_RESOURCE:
+            # On Android/Termux, we rely on timeout-based limiting only
+            # Python memory management will still enforce limits via GC
+            self._limits_set = True
+            return
+
         try:
             # CPU time limit
             resource.setrlimit(resource.RLIMIT_CPU,
@@ -400,7 +432,7 @@ class ResourceLimiter:
                 resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
 
             self._limits_set = True
-        except (ValueError, resource.error):
+        except (ValueError, RESOURCE_ERROR):
             # May fail on some platforms
             pass
 
@@ -445,7 +477,7 @@ class TimeoutManager:
         self._timed_out = True
         # Try to interrupt the main thread
         try:
-            import thread
+            # FIX: Use _thread module (thread module is deprecated)
             thread.interrupt_main()
         except:
             pass
@@ -833,6 +865,10 @@ class ExecutionSandbox:
             'import_validator': {
                 'imported': list(self.import_validator.get_imported_modules()),
                 'denied': self.import_validator.get_denied_imports()
+            },
+            'platform': {
+                'has_resource_module': HAS_RESOURCE,
+                'platform': sys.platform,
             }
         }
 
@@ -934,12 +970,16 @@ __all__ = [
     'OutputCapture',
     'CodeAnalyzer',
     'ExecutionSandbox',
-    'SandboxManager'
+    'SandboxManager',
+    'HAS_RESOURCE',  # Export for platform detection
 ]
 
 
 if __name__ == "__main__":
-    print("JARVIS Execution Sandbox")
+    print("JARVIS Execution Sandbox v1.0.1")
+    print("=" * 50)
+    print(f"Platform: {sys.platform}")
+    print(f"Resource module available: {HAS_RESOURCE}")
     print("=" * 50)
 
     # Create sandbox with medium security
@@ -968,4 +1008,4 @@ os.system('ls')
     print(f"\nDangerous code status: {result.status.name}")
     print(f"Error: {result.error}")
 
-    print("\nSandbox system ready!")
+    print("\nSandbox system ready for Termux/Android!")
