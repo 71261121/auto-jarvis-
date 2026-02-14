@@ -94,7 +94,7 @@ class ModelCapability(Enum):
     MULTIMODAL = auto()
 
 
-# Model capability mapping (based on research)
+# Model capability mapping (based on research) - COMPLETE MAPPING
 MODEL_CAPABILITIES = {
     FreeModel.AUTO_FREE: [
         ModelCapability.FAST_RESPONSE,
@@ -107,13 +107,32 @@ MODEL_CAPABILITIES = {
     ],
     FreeModel.STEP_3_5_FLASH: [
         ModelCapability.FAST_RESPONSE,
+        ModelCapability.CODING,
     ],
     FreeModel.TRINITY_LARGE: [
         ModelCapability.REASONING,
         ModelCapability.LONG_CONTEXT,
     ],
+    FreeModel.SOLAR_PRO: [
+        ModelCapability.CODING,
+        ModelCapability.FAST_RESPONSE,
+    ],
     FreeModel.LFM_THINKING: [
         ModelCapability.REASONING,
+    ],
+    FreeModel.LFM_INSTRUCT: [
+        ModelCapability.FAST_RESPONSE,
+    ],
+    FreeModel.DEEPSEEK_R1: [
+        ModelCapability.REASONING,
+        ModelCapability.CODING,
+        ModelCapability.MATH,
+        ModelCapability.LONG_CONTEXT,
+    ],
+    FreeModel.GEMINI_FLASH: [
+        ModelCapability.LONG_CONTEXT,
+        ModelCapability.MULTIMODAL,
+        ModelCapability.FAST_RESPONSE,
     ],
 }
 
@@ -334,13 +353,18 @@ class OpenRouterClient:
         **kwargs
     ) -> str:
         """Create cache key for request"""
-        key_data = json.dumps({
-            'messages': messages,
-            'model': model,
-            'temperature': temperature,
-            'kwargs': {k: v for k, v in kwargs.items() if k != 'api_key'}
-        }, sort_keys=True)
-        return hashlib.sha256(key_data.encode()).hexdigest()
+        try:
+            key_data = json.dumps({
+                'messages': messages,
+                'model': model,
+                'temperature': temperature,
+                'kwargs': {k: v for k, v in kwargs.items() if k != 'api_key'}
+            }, sort_keys=True, default=str)  # FIX: default=str prevents crash on non-serializable objects
+            return hashlib.sha256(key_data.encode()).hexdigest()
+        except Exception as e:
+            # Fallback for any serialization errors
+            logger.warning(f"Failed to create cache key: {e}")
+            return hashlib.sha256(f"{time.time()}:{model}:{id(self)}".encode()).hexdigest()
     
     def _get_cached(self, cache_key: str) -> Optional[AIResponse]:
         """Get cached response if available"""
@@ -832,20 +856,27 @@ Modification goal: {goal}
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _client: Optional[OpenRouterClient] = None
+_client_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_client(api_key: str = None) -> OpenRouterClient:
-    """Get global OpenRouter client instance"""
+    """Get global OpenRouter client instance (thread-safe)"""
     global _client
     if _client is None:
-        _client = OpenRouterClient(api_key=api_key)
+        with _client_lock:
+            if _client is None:  # FIX: Double-check pattern prevents race condition
+                _client = OpenRouterClient(api_key=api_key)
     return _client
 
 
 def initialize_client(api_key: str) -> OpenRouterClient:
     """Initialize global client with API key"""
     global _client
-    _client = OpenRouterClient(api_key=api_key)
+    with _client_lock:
+        if _client is not None:
+            _client.close()
+            logger.warning("Replacing existing OpenRouter client")
+        _client = OpenRouterClient(api_key=api_key)
     return _client
 
 

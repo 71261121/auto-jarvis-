@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-JARVIS v14 Ultimate - Phase 3: AI Engine Comprehensive Test Suite
+JARVIS v14 Ultimate - Phase 3: AI Engine COMPREHENSIVE Test Suite
+=================================================================
+
+This test suite covers:
+- Basic functionality tests
+- Thread safety tests
+- Edge case tests
+- Input validation tests
+- Integration tests
+- Performance tests
+
+All tests must pass for Phase 3 to be considered ZERO ERROR.
 """
 
 import sys
@@ -9,21 +20,26 @@ import os
 import time
 import json
 import threading
+import concurrent.futures
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import modules
 from core.ai.openrouter_client import (
-    OpenRouterClient, FreeModel, ModelCapability, ChatMessage, AIResponse, ConversationContext
+    OpenRouterClient, FreeModel, ModelCapability, ChatMessage, AIResponse, ConversationContext,
+    MODEL_CAPABILITIES, MODEL_CONTEXT, get_client
 )
 from core.ai.rate_limiter import (
-    RateLimiterManager, AdaptiveRateLimiter, TokenBucket, CircuitBreaker, CircuitState, RateLimitConfig
+    RateLimiterManager, AdaptiveRateLimiter, TokenBucket, CircuitBreaker, CircuitState, RateLimitConfig,
+    get_rate_limiter_manager
 )
 from core.ai.model_selector import (
-    ModelSelector, TaskType, ModelInfo, ModelStatus, TaskDetector, FREE_MODELS
+    ModelSelector, TaskType, ModelInfo, ModelStatus, TaskDetector, FREE_MODELS,
+    get_model_selector
 )
 from core.ai.response_parser import (
-    ResponseParser, StreamingParser, ParsedResponse, ErrorCode, ErrorDetector
+    ResponseParser, StreamingParser, ParsedResponse, ErrorCode, ErrorDetector,
+    get_parser
 )
 
 class TestResult:
@@ -38,7 +54,7 @@ class TestResult:
     
     def add_fail(self, name, error):
         self.failed.append((name, error))
-        print(f"  ✗ {name}")
+        print(f"  ✗ {name}: {error}")
     
     def summary(self):
         elapsed = time.time() - self.start_time
@@ -54,8 +70,13 @@ class TestResult:
 
 results = TestResult()
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 1: BASIC FUNCTIONALITY TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\n=== SECTION 1: BASIC FUNCTIONALITY TESTS ===")
+
 # OpenRouter Client Tests
-print("\n=== OPENROUTER CLIENT TESTS ===")
+print("\n--- OpenRouter Client ---")
 
 try:
     assert FreeModel.AUTO_FREE.value == "openrouter/free"
@@ -86,7 +107,7 @@ except Exception as e:
     results.add_fail("ConversationContext", str(e))
 
 # Rate Limiter Tests
-print("\n=== RATE LIMITER TESTS ===")
+print("\n--- Rate Limiter ---")
 
 try:
     bucket = TokenBucket(capacity=10, refill_rate=2.0)
@@ -139,7 +160,7 @@ except Exception as e:
     results.add_fail("AdaptiveRateLimiter check", str(e))
 
 # Model Selector Tests
-print("\n=== MODEL SELECTOR TESTS ===")
+print("\n--- Model Selector ---")
 
 try:
     assert hasattr(TaskType, 'CODING')
@@ -187,7 +208,7 @@ except Exception as e:
     results.add_fail("FREE_MODELS dict", str(e))
 
 # Response Parser Tests
-print("\n=== RESPONSE PARSER TESTS ===")
+print("\n--- Response Parser ---")
 
 try:
     parser = ResponseParser()
@@ -230,8 +251,218 @@ try:
 except Exception as e:
     results.add_fail("StreamingParser", str(e))
 
-# Integration Tests
-print("\n=== INTEGRATION TESTS ===")
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 2: EDGE CASE TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\n=== SECTION 2: EDGE CASE TESTS ===")
+
+# Test MODEL_CAPABILITIES completeness
+try:
+    # FIX VERIFICATION: All FreeModel members should have capability mapping
+    missing_models = []
+    for model in FreeModel:
+        if model not in MODEL_CAPABILITIES:
+            missing_models.append(model.value)
+    
+    if missing_models:
+        results.add_fail("MODEL_CAPABILITIES completeness", f"Missing: {missing_models}")
+    else:
+        results.add_pass("MODEL_CAPABILITIES completeness (all 9 models mapped)")
+except Exception as e:
+    results.add_fail("MODEL_CAPABILITIES completeness", str(e))
+
+# Test MODEL_CONTEXT completeness
+try:
+    missing_context = []
+    for model in FreeModel:
+        if model not in MODEL_CONTEXT:
+            missing_context.append(model.value)
+    
+    if missing_context:
+        results.add_fail("MODEL_CONTEXT completeness", f"Missing: {missing_context}")
+    else:
+        results.add_pass("MODEL_CONTEXT completeness")
+except Exception as e:
+    results.add_fail("MODEL_CONTEXT completeness", str(e))
+
+# Test TokenBucket negative tokens validation
+try:
+    bucket = TokenBucket(capacity=10, refill_rate=2.0)
+    try:
+        bucket.consume(-1)
+        results.add_fail("TokenBucket negative tokens", "Should have raised ValueError")
+    except ValueError:
+        results.add_pass("TokenBucket negative tokens validation")
+except Exception as e:
+    results.add_fail("TokenBucket negative tokens", str(e))
+
+# Test TokenBucket zero capacity validation
+try:
+    try:
+        bucket = TokenBucket(capacity=0, refill_rate=1.0)
+        results.add_fail("TokenBucket zero capacity", "Should have raised ValueError")
+    except ValueError:
+        results.add_pass("TokenBucket zero capacity validation")
+except Exception as e:
+    results.add_fail("TokenBucket zero capacity", str(e))
+
+# Test TokenBucket zero refill_rate validation
+try:
+    try:
+        bucket = TokenBucket(capacity=10, refill_rate=0)
+        results.add_fail("TokenBucket zero refill_rate", "Should have raised ValueError")
+    except ValueError:
+        results.add_pass("TokenBucket zero refill_rate validation")
+except Exception as e:
+    results.add_fail("TokenBucket zero refill_rate", str(e))
+
+# Test empty message handling
+try:
+    parser = ResponseParser()
+    parsed = parser.parse("")
+    assert parsed.success == False
+    results.add_pass("Empty string parsing")
+except Exception as e:
+    results.add_fail("Empty string parsing", str(e))
+
+# Test None handling
+try:
+    parser = ResponseParser()
+    parsed = parser.parse(None)
+    assert parsed.success == False
+    results.add_pass("None parsing")
+except Exception as e:
+    results.add_fail("None parsing", str(e))
+
+# Test bytes parsing
+try:
+    parser = ResponseParser()
+    parsed = parser.parse(b'{"choices": [{"message": {"content": "test"}}]}')
+    assert parsed.success == True
+    results.add_pass("Bytes parsing")
+except Exception as e:
+    results.add_fail("Bytes parsing", str(e))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 3: THREAD SAFETY TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\n=== SECTION 3: THREAD SAFETY TESTS ===")
+
+# Test TokenBucket concurrent access
+try:
+    bucket = TokenBucket(capacity=100, refill_rate=100.0)
+    errors = []
+    
+    def consume_tokens():
+        for _ in range(100):
+            try:
+                bucket.consume(1)
+            except Exception as e:
+                errors.append(str(e))
+    
+    threads = [threading.Thread(target=consume_tokens) for _ in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    
+    if errors:
+        results.add_fail("TokenBucket thread safety", f"Errors: {errors}")
+    else:
+        results.add_pass("TokenBucket thread safety (1000 operations)")
+except Exception as e:
+    results.add_fail("TokenBucket thread safety", str(e))
+
+# Test CircuitBreaker concurrent access
+try:
+    cb = CircuitBreaker(failure_threshold=10)
+    errors = []
+    
+    def record_ops():
+        for _ in range(50):
+            try:
+                cb.record_failure()
+                cb.record_success()
+            except Exception as e:
+                errors.append(str(e))
+    
+    threads = [threading.Thread(target=record_ops) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    
+    if errors:
+        results.add_fail("CircuitBreaker thread safety", f"Errors: {errors}")
+    else:
+        results.add_pass("CircuitBreaker thread safety")
+except Exception as e:
+    results.add_fail("CircuitBreaker thread safety", str(e))
+
+# Test ModelSelector concurrent access
+try:
+    selector = ModelSelector()
+    errors = []
+    results_list = []
+    
+    def select_models():
+        for _ in range(20):
+            try:
+                result = selector.select_for_task(TaskType.CODING)
+                results_list.append(result.model_id)
+            except Exception as e:
+                errors.append(str(e))
+    
+    threads = [threading.Thread(target=select_models) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    
+    if errors:
+        results.add_fail("ModelSelector thread safety", f"Errors: {errors}")
+    elif len(results_list) != 100:
+        results.add_fail("ModelSelector thread safety", f"Missing results: {len(results_list)}/100")
+    else:
+        results.add_pass("ModelSelector thread safety (100 selections)")
+except Exception as e:
+    results.add_fail("ModelSelector thread safety", str(e))
+
+# Test global singleton thread safety
+try:
+    clients = []
+    errors = []
+    
+    def get_clients():
+        try:
+            # Reset global for test
+            import core.ai.openrouter_client as orc
+            orc._client = None
+            client = get_client(api_key="test-key")
+            clients.append(id(client))
+        except Exception as e:
+            errors.append(str(e))
+    
+    threads = [threading.Thread(target=get_clients) for _ in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    
+    unique_clients = len(set(clients))
+    if errors and "API key" not in str(errors[0]):  # API key error is expected
+        results.add_fail("Global singleton thread safety", f"Errors: {errors}")
+    elif unique_clients != 1:
+        results.add_fail("Global singleton thread safety", f"Multiple instances: {unique_clients}")
+    else:
+        results.add_pass("Global singleton thread safety")
+except Exception as e:
+    results.add_fail("Global singleton thread safety", str(e))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 4: INTEGRATION TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\n=== SECTION 4: INTEGRATION TESTS ===")
 
 try:
     selector = ModelSelector()
@@ -244,7 +475,97 @@ try:
 except Exception as e:
     results.add_fail("Integration: Selector-Parser", str(e))
 
-# Summary
+try:
+    manager = RateLimiterManager()
+    manager.register('test_endpoint', RateLimitConfig(requests_per_minute=100))
+    result = manager.check('test_endpoint')
+    assert result.allowed == True
+    results.add_pass("Integration: RateLimiterManager")
+except Exception as e:
+    results.add_fail("Integration: RateLimiterManager", str(e))
+
+try:
+    # Test complete workflow
+    selector = get_model_selector()
+    result = selector.select("Write a function to sort a list")
+    
+    parser = get_parser()
+    mock_response = {
+        "choices": [{
+            "message": {
+                "content": "def sort_list(lst): return sorted(lst)"
+            }
+        }],
+        "usage": {"total_tokens": 20}
+    }
+    parsed = parser.parse(mock_response)
+    
+    if result.model_id and parsed.success:
+        results.add_pass("Integration: Full workflow")
+    else:
+        results.add_fail("Integration: Full workflow", "Incomplete workflow")
+except Exception as e:
+    results.add_fail("Integration: Full workflow", str(e))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 5: PERFORMANCE TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\n=== SECTION 5: PERFORMANCE TESTS ===")
+
+# Test TokenBucket performance
+try:
+    bucket = TokenBucket(capacity=1000, refill_rate=100.0)
+    start = time.time()
+    for _ in range(10000):
+        bucket.consume(1)
+    elapsed = time.time() - start
+    
+    if elapsed < 1.0:  # Should be fast
+        results.add_pass(f"TokenBucket performance (10000 ops in {elapsed:.3f}s)")
+    else:
+        results.add_fail("TokenBucket performance", f"Too slow: {elapsed:.3f}s")
+except Exception as e:
+    results.add_fail("TokenBucket performance", str(e))
+
+# Test ModelSelector performance
+try:
+    selector = ModelSelector()
+    start = time.time()
+    for _ in range(1000):
+        selector.select_for_task(TaskType.CODING)
+    elapsed = time.time() - start
+    
+    if elapsed < 2.0:  # Should be reasonably fast
+        results.add_pass(f"ModelSelector performance (1000 selections in {elapsed:.3f}s)")
+    else:
+        results.add_fail("ModelSelector performance", f"Too slow: {elapsed:.3f}s")
+except Exception as e:
+    results.add_fail("ModelSelector performance", str(e))
+
+# Test ResponseParser performance
+try:
+    parser = ResponseParser()
+    test_response = {"choices": [{"message": {"content": "test" * 100}}]}
+    start = time.time()
+    for _ in range(10000):
+        parser.parse(test_response)
+    elapsed = time.time() - start
+    
+    if elapsed < 2.0:
+        results.add_pass(f"ResponseParser performance (10000 parses in {elapsed:.3f}s)")
+    else:
+        results.add_fail("ResponseParser performance", f"Too slow: {elapsed:.3f}s")
+except Exception as e:
+    results.add_fail("ResponseParser performance", str(e))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SUMMARY
+# ═══════════════════════════════════════════════════════════════════════════════
 success = results.summary()
-print("\n" + ("🎉 ALL TESTS PASSED!" if success else "⚠️ SOME TESTS FAILED"))
+
+if success:
+    print("\n" + "🎉 ALL TESTS PASSED! PHASE 3 IS ZERO ERROR!")
+else:
+    print("\n" + "⚠️ SOME TESTS FAILED - FIXES REQUIRED")
+
 sys.exit(0 if success else 1)

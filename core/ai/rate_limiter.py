@@ -124,6 +124,12 @@ class TokenBucket:
             capacity: Maximum tokens (burst size)
             refill_rate: Tokens added per second
         """
+        # FIX: Validate inputs
+        if capacity <= 0:
+            raise ValueError("capacity must be positive")
+        if refill_rate <= 0:
+            raise ValueError("refill_rate must be positive")
+        
         self._capacity = capacity
         self._tokens = float(capacity)
         self._refill_rate = refill_rate
@@ -135,9 +141,13 @@ class TokenBucket:
         now = time.time()
         elapsed = now - self._last_refill
         
+        # FIX: Handle system clock adjustment (negative elapsed time)
         if elapsed > 0:
             new_tokens = elapsed * self._refill_rate
             self._tokens = min(self._capacity, self._tokens + new_tokens)
+            self._last_refill = now
+        elif elapsed < 0:
+            # System clock was adjusted backwards, just update the time
             self._last_refill = now
     
     def consume(self, tokens: int = 1) -> RateLimitResult:
@@ -150,6 +160,10 @@ class TokenBucket:
         Returns:
             RateLimitResult with success status
         """
+        # FIX: Validate tokens parameter
+        if tokens <= 0:
+            raise ValueError("tokens must be positive")
+        
         with self._lock:
             self._refill()
             
@@ -635,12 +649,14 @@ class AdaptiveRateLimiter:
         return wait_time
     
     def get_current_delay(self) -> float:
-        """Get current adaptive delay"""
-        return self._current_delay
+        """Get current adaptive delay (thread-safe)"""
+        with self._lock:  # FIX: Added lock for thread safety
+            return self._current_delay
     
     def get_effective_rate(self) -> float:
-        """Get current effective rate (requests per minute)"""
-        return self._effective_rate
+        """Get current effective rate (requests per minute, thread-safe)"""
+        with self._lock:  # FIX: Added lock for thread safety
+            return self._effective_rate
     
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive statistics"""
@@ -714,7 +730,7 @@ class RateLimiterManager:
         self._default_config = default_config or RateLimitConfig()
         self._limiters: Dict[str, AdaptiveRateLimiter] = {}
         self._configs: Dict[str, RateLimitConfig] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # FIX: Use RLock instead of Lock to prevent deadlock
     
     def register(
         self,
@@ -863,24 +879,27 @@ def rate_limited(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _manager: Optional[RateLimiterManager] = None
+_manager_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_rate_limiter_manager() -> RateLimiterManager:
-    """Get global rate limiter manager"""
+    """Get global rate limiter manager (thread-safe)"""
     global _manager
     if _manager is None:
-        _manager = RateLimiterManager()
-        
-        # Pre-register common endpoints
-        _manager.register('openrouter', RateLimitConfig(
-            requests_per_minute=60,
-            burst_size=10,
-            circuit_failure_threshold=5
-        ))
-        _manager.register('github', RateLimitConfig(
-            requests_per_minute=30,
-            burst_size=5
-        ))
+        with _manager_lock:
+            if _manager is None:  # FIX: Double-check pattern
+                _manager = RateLimiterManager()
+                
+                # Pre-register common endpoints
+                _manager.register('openrouter', RateLimitConfig(
+                    requests_per_minute=60,
+                    burst_size=10,
+                    circuit_failure_threshold=5
+                ))
+                _manager.register('github', RateLimitConfig(
+                    requests_per_minute=30,
+                    burst_size=5
+                ))
     
     return _manager
 

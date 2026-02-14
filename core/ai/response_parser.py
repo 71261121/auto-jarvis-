@@ -864,13 +864,16 @@ class ChunkedResponseHandler:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _parser: Optional[ResponseParser] = None
+_parser_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_parser() -> ResponseParser:
-    """Get global response parser instance"""
+    """Get global response parser instance (thread-safe)"""
     global _parser
     if _parser is None:
-        _parser = ResponseParser()
+        with _parser_lock:
+            if _parser is None:  # FIX: Double-check pattern prevents race condition
+                _parser = ResponseParser()
     return _parser
 
 

@@ -876,13 +876,16 @@ class ModelSelector:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _selector: Optional[ModelSelector] = None
+_selector_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_model_selector() -> ModelSelector:
-    """Get global model selector instance"""
+    """Get global model selector instance (thread-safe)"""
     global _selector
     if _selector is None:
-        _selector = ModelSelector()
+        with _selector_lock:
+            if _selector is None:  # FIX: Double-check pattern prevents race condition
+                _selector = ModelSelector()
     return _selector
 
 
