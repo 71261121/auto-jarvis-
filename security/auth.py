@@ -914,9 +914,19 @@ class Authenticator:
     def _ensure_system_user(self) -> None:
         """Ensure system user exists"""
         if not self.user_store.list_users():
+            # Get admin password from environment variable or generate secure random
+            admin_password = os.environ.get('JARVIS_ADMIN_PASSWORD')
+            if not admin_password:
+                # Generate a secure random password if not provided
+                import secrets
+                import string
+                admin_password = ''.join(secrets.choice(string.ascii_letters + string.digits + '!@#$%') for _ in range(16))
+                print(f"WARNING: No JARVIS_ADMIN_PASSWORD set. Generated admin password: {admin_password}")
+                print("Please set JARVIS_ADMIN_PASSWORD environment variable for production use.")
+            
             self.create_user(
                 username="admin",
-                password="Admin@123456",
+                password=admin_password,
                 email="admin@jarvis.local",
                 role=UserRole.SUPER_ADMIN
             )

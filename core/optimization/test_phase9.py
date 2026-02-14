@@ -57,7 +57,7 @@ class TestResult:
         print(f"Success Rate: {rate:.1f}% | Time: {elapsed:.2f}s")
         print(f"{'='*60}")
         
-        if self.failed == 0:
+        if len(self.failed) == 0:
             print("✓ ALL PHASE 9 TESTS PASSED!")
         else:
             print("✗ SOME TESTS FAILED!")

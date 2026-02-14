@@ -397,7 +397,21 @@ class AESGCMCipher(SymmetricCipher):
             return self._fallback_encrypt(plaintext, key)
 
     def _fallback_encrypt(self, plaintext: bytes, key: bytes) -> EncryptedData:
-        """Fallback encryption when cryptography not available"""
+        """Fallback encryption when cryptography not available
+        
+        WARNING: This is a WEAK encryption method (XOR with HMAC).
+        It should ONLY be used when proper cryptographic libraries 
+        (cryptography, nacl) are not available.
+        
+        For production use, install: pip install cryptography
+        """
+        import warnings
+        warnings.warn(
+            "Using XOR fallback encryption - NOT SECURE for production! "
+            "Install 'cryptography' package: pip install cryptography",
+            UserWarning
+        )
+        
         iv = SecureRandom.bytes(DEFAULT_IV_SIZE)
 
         # Simple XOR-based encryption with HMAC
@@ -413,7 +427,7 @@ class AESGCMCipher(SymmetricCipher):
             iv=iv,
             tag=tag,
             algorithm="xor-fallback",
-            metadata={'warning': 'Using fallback encryption'}
+            metadata={'warning': 'WEAK ENCRYPTION - Install cryptography package for AES-256-GCM'}
         )
 
     def decrypt(self, encrypted_data: EncryptedData, key: bytes,
