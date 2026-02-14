@@ -629,6 +629,61 @@ def is_termux() -> bool:
     return 'TERMUX_VERSION' in os.environ or 'com.termux' in os.environ.get('PREFIX', '')
 
 
+def fix_termux_ssl():
+    """
+    Fix SSL certificate issues in Termux.
+    
+    Termux sometimes has SSL certificate verification issues.
+    This function attempts to fix them.
+    """
+    if not is_termux():
+        return True
+    
+    import os
+    import ssl
+    import subprocess
+    
+    try:
+        # Check if ca-certificates is installed
+        cert_path = '/data/data/com.termux/files/usr/etc/tls/cert.pem'
+        if os.path.exists(cert_path):
+            return True
+        
+        # Try to install ca-certificates
+        subprocess.run(['pkg', 'install', 'ca-certificates', '-y'], 
+                      capture_output=True, timeout=60)
+        
+        # Update certificates
+        subprocess.run(['update-ca-certificates'], 
+                      capture_output=True, timeout=30)
+        
+        return True
+    except Exception:
+        # Return False to indicate SSL may have issues
+        return False
+
+
+def get_ssl_context():
+    """Get SSL context that works on Termux"""
+    import ssl
+    
+    ctx = ssl.create_default_context()
+    
+    if is_termux():
+        # Try to fix SSL first
+        if not fix_termux_ssl():
+            # If fix failed, create more permissive context
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            import warnings
+            warnings.warn(
+                "SSL certificate verification disabled. "
+                "Run 'pkg install ca-certificates && update-ca-certificates' in Termux."
+            )
+    
+    return ctx
+
+
 def get_termux_package_for(module_name: str) -> Optional[str]:
     """
     Get the Termux system package name for a Python module.

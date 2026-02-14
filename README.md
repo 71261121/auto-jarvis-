@@ -110,10 +110,35 @@ JARVIS v14 Ultimate is a comprehensive AI assistant designed specifically for mo
 git clone https://github.com/71261121/auto-jarvis-.git
 cd auto-jarvis-
 
-# Install dependencies (optional - fallbacks built-in)
-pip install -r requirements.txt
+# Install dependencies (use pip3 on Termux/Linux)
+pip3 install -r requirements.txt
 
 # Set API key (get free key from openrouter.ai)
+export OPENROUTER_API_KEY='your-key-here'
+
+# Run
+python3 main.py
+```
+
+### Termux (Android) Installation
+
+```bash
+# Update packages
+pkg update && pkg upgrade -y
+
+# Install Python and dependencies
+pkg install python git clang rust -y
+
+# Install CA certificates (fixes SSL issues)
+pkg install ca-certificates -y
+update-ca-certificates
+
+# Clone and install
+git clone https://github.com/71261121/auto-jarvis-.git
+cd auto-jarvis-
+pip3 install -r requirements.txt
+
+# Set API key
 export OPENROUTER_API_KEY='your-key-here'
 
 # Run
@@ -124,6 +149,19 @@ python3 main.py
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/71261121/auto-jarvis-/main/install/install.sh | bash
+```
+
+### Keeping JARVIS Running in Background (Termux)
+
+```bash
+# Prevent Android from killing the process
+termux-wake-lock
+
+# Run JARVIS
+python3 main.py
+
+# When done, release wake lock
+termux-wake-unlock
 ```
 
 ---
