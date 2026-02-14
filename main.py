@@ -247,11 +247,11 @@ class JARVIS:
         
         try:
             # Event bus for inter-module communication
-            self.event_bus = EventBus()
+            self.event_bus = EventEmitter()
             
             # Cache system
             cache_dir = os.path.expanduser("~/.jarvis/cache")
-            self.cache = CacheManager(cache_dir=cache_dir)
+            self.cache = Cache(cache_dir=cache_dir)
             
             # Plugin manager
             self.plugin_manager = PluginManager()
@@ -321,8 +321,8 @@ class JARVIS:
             
             self.code_analyzer = CodeAnalyzer()
             self.backup_manager = BackupManager(backup_dir=backup_dir)
-            self.safe_modifier = SafeModifier(backup_manager=self.backup_manager)
-            self.improvement_engine = ImprovementEngine()
+            self.safe_modifier = CodeValidator(backup_manager=self.backup_manager)
+            self.improvement_engine = LearningSystem()
             
             if self.debug:
                 print("[DEBUG] Self-modification engine initialized")
@@ -369,7 +369,7 @@ class JARVIS:
                 self.authenticator = Authenticator()
             
             self.encryption = EncryptionManager()
-            self.sandbox = SandboxExecutor()
+            self.sandbox = ExecutionSandbox()
             self.audit_logger = AuditLogger()
             
             if self.debug:
@@ -402,7 +402,9 @@ class JARVIS:
     def _setup_signals(self):
         """Setup signal handlers for graceful shutdown"""
         signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        # SIGTERM not available on Windows
+        if hasattr(signal, 'SIGTERM'):
+            signal.signal(signal.SIGTERM, self._signal_handler)
     
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals"""
@@ -650,21 +652,21 @@ For more help, see docs/USER_GUIDE.md
         if self.chat_storage:
             try:
                 self.chat_storage.flush()
-            except:
+            except Exception:
                 pass
         
         # Clear cache if needed
         if self.cache:
             try:
                 self.cache.cleanup_expired()
-            except:
+            except Exception:
                 pass
         
         # Set state to shutdown
         if self.state_machine:
             try:
                 self.state_machine.transition_to(JARVISState.SHUTDOWN)
-            except:
+            except Exception:
                 pass
 
 

@@ -128,7 +128,7 @@ class CacheEntry:
         """Estimate memory size"""
         try:
             return sys.getsizeof(self.value) + 200  # Base overhead
-        except:
+        except Exception:
             return self.size_bytes or 100
 
 
@@ -365,7 +365,7 @@ class MemoryCache:
             # Estimate size
             try:
                 size = sys.getsizeof(value) + 200
-            except:
+            except Exception:
                 size = 100
             
             # Check if we need to evict

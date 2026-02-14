@@ -479,7 +479,7 @@ class TimeoutManager:
         try:
             # FIX: Use _thread module (thread module is deprecated)
             thread.interrupt_main()
-        except:
+        except Exception:
             pass
 
     @property

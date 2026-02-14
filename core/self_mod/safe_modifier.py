@@ -469,7 +469,7 @@ class CodeValidator:
             elif complexity > 10:
                 return RiskLevel.MEDIUM
         
-        except:
+        except Exception:
             pass
         
         return RiskLevel.LOW
@@ -539,7 +539,7 @@ class SandboxExecutor:
                     self._safe_builtins[name] = __builtins__.get(name)
                 else:
                     self._safe_builtins[name] = getattr(__builtins__, name, None)
-            except:
+            except Exception:
                 pass
     
     def execute(
@@ -674,7 +674,7 @@ result = {func_name}(*{args}, **{kwargs})
                                 f"Test {i+1}: Expected {expected}, got {actual}"
                             )
                             result.passed = False
-                    except:
+                    except Exception:
                         result.failed_tests += 1
                         result.errors.append(
                             f"Test {i+1}: Could not compare results"
@@ -1082,7 +1082,7 @@ class ModificationEngine:
             tree = ast.parse(file_content)
             # This is a simplified version - full implementation would
             # use AST node replacement
-        except:
+        except Exception:
             pass
         
         return file_content

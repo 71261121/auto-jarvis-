@@ -270,6 +270,12 @@ typing-extensions>=4.0.0
 # Class 1 - High probability
 rich>=12.0.0
 loguru>=0.6.0
+
+# Additional dependencies (used in code)
+cryptography>=3.4.0
+httpx>=0.24.0
+pynacl>=1.5.0
+psutil>=5.9.0
 EOF
     
     # Install

@@ -323,7 +323,7 @@ class ErrorHandler:
             for callback in self._on_error_callbacks:
                 try:
                     callback(record)
-                except:
+                except Exception:
                     pass
             
             # Show user-friendly message
@@ -559,7 +559,7 @@ class ErrorHandler:
             for callback in self._on_recovery_callbacks:
                 try:
                     callback(record)
-                except:
+                except Exception:
                     pass
             
             return record.recovery_success

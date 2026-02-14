@@ -167,7 +167,7 @@ class SecureStorage:
         # Set restrictive permissions
         try:
             os.chmod(self._storage_path, 0o600)
-        except:
+        except Exception:
             pass
 
     def load(self, password: str = None) -> Dict[str, str]:
