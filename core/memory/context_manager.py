@@ -98,13 +98,16 @@ class ContextWindow:
     def available_tokens(self) -> int:
         """Get available token budget"""
         used = self.total_tokens + self.system_prompt_tokens
-        return max(0, self.max_tokens - used - self.reserved_tokens)
+        # FIX: Ensure reserved_tokens doesn't exceed max_tokens
+        effective_reserved = min(self.reserved_tokens, self.max_tokens * 0.1)  # Max 10% reserved
+        return max(0, self.max_tokens - used - effective_reserved)
     
     def utilization_percent(self) -> float:
         """Get context utilization percentage"""
-        total_capacity = self.max_tokens - self.reserved_tokens
+        effective_reserved = min(self.reserved_tokens, self.max_tokens * 0.1)
+        total_capacity = self.max_tokens - effective_reserved
         used = self.total_tokens + self.system_prompt_tokens
-        return (used / total_capacity) * 100 if total_capacity > 0 else 0
+        return (used / max(1, total_capacity)) * 100
 
 
 @dataclass
@@ -806,20 +809,24 @@ class ContextManager:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _manager: Optional[ContextManager] = None
+_manager_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_context_manager() -> ContextManager:
-    """Get global ContextManager instance"""
+    """Get global ContextManager instance (thread-safe)"""
     global _manager
     if _manager is None:
-        _manager = ContextManager()
+        with _manager_lock:
+            if _manager is None:  # FIX: Double-check pattern
+                _manager = ContextManager()
     return _manager
 
 
 def initialize_context_manager(**kwargs) -> ContextManager:
     """Initialize global manager with custom settings"""
     global _manager
-    _manager = ContextManager(**kwargs)
+    with _manager_lock:
+        _manager = ContextManager(**kwargs)
     return _manager
 
 

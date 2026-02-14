@@ -31,6 +31,7 @@ import threading
 import logging
 import math
 import hashlib
+import sys
 from typing import Dict, Any, Optional, List, Set, Generator, Tuple, Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -874,20 +875,24 @@ class ConversationIndexer:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _indexer: Optional[ConversationIndexer] = None
+_indexer_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_indexer() -> ConversationIndexer:
-    """Get global ConversationIndexer instance"""
+    """Get global ConversationIndexer instance (thread-safe)"""
     global _indexer
     if _indexer is None:
-        _indexer = ConversationIndexer()
+        with _indexer_lock:
+            if _indexer is None:  # FIX: Double-check pattern
+                _indexer = ConversationIndexer()
     return _indexer
 
 
 def initialize_indexer(**kwargs) -> ConversationIndexer:
     """Initialize global indexer with custom settings"""
     global _indexer
-    _indexer = ConversationIndexer(**kwargs)
+    with _indexer_lock:
+        _indexer = ConversationIndexer(**kwargs)
     return _indexer
 
 

@@ -820,20 +820,24 @@ def memory_limited(max_mb: float) -> Callable:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _optimizer: Optional[MemoryOptimizer] = None
+_optimizer_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_memory_optimizer() -> MemoryOptimizer:
-    """Get global MemoryOptimizer instance"""
+    """Get global MemoryOptimizer instance (thread-safe)"""
     global _optimizer
     if _optimizer is None:
-        _optimizer = MemoryOptimizer()
+        with _optimizer_lock:
+            if _optimizer is None:  # FIX: Double-check pattern
+                _optimizer = MemoryOptimizer()
     return _optimizer
 
 
 def initialize_memory_optimizer(**kwargs) -> MemoryOptimizer:
     """Initialize global optimizer with custom settings"""
     global _optimizer
-    _optimizer = MemoryOptimizer(**kwargs)
+    with _optimizer_lock:
+        _optimizer = MemoryOptimizer(**kwargs)
     return _optimizer
 
 

@@ -1221,20 +1221,26 @@ class ChatStorage:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _storage: Optional[ChatStorage] = None
+_storage_lock = threading.Lock()  # FIX: Thread-safe singleton
 
 
 def get_storage() -> ChatStorage:
-    """Get global ChatStorage instance"""
+    """Get global ChatStorage instance (thread-safe)"""
     global _storage
     if _storage is None:
-        _storage = ChatStorage()
+        with _storage_lock:
+            if _storage is None:  # FIX: Double-check pattern
+                _storage = ChatStorage()
     return _storage
 
 
 def initialize_storage(db_path: str = None, **kwargs) -> ChatStorage:
     """Initialize global storage with custom settings"""
     global _storage
-    _storage = ChatStorage(db_path=db_path, **kwargs)
+    with _storage_lock:
+        if _storage is not None:
+            _storage.close()
+        _storage = ChatStorage(db_path=db_path, **kwargs)
     return _storage
 
 
