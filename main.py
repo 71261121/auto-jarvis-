@@ -61,7 +61,7 @@ except ImportError:
     CORE_AVAILABLE = False
 
 try:
-    from core.cache import Cache
+    from core.cache import MemoryCache, get_cache
 except ImportError:
     pass  # Non-critical
 
@@ -71,7 +71,7 @@ except ImportError:
     pass  # Non-critical
 
 try:
-    from core.state_machine import JARVISStateMachine, JARVISState
+    from core.state_machine import StateMachine, JarvisStates, create_jarvis_state_machine
 except ImportError:
     CORE_AVAILABLE = False
 
@@ -98,7 +98,7 @@ except ImportError:
     SELF_MOD_AVAILABLE = False
 
 try:
-    from core.self_mod.improvement_engine import LearningSystem
+    from core.self_mod.improvement_engine import SelfImprovementEngine
 except ImportError:
     pass  # Non-critical
 
@@ -250,14 +250,13 @@ class JARVIS:
             self.event_bus = EventEmitter()
             
             # Cache system
-            cache_dir = os.path.expanduser("~/.jarvis/cache")
-            self.cache = Cache(cache_dir=cache_dir)
+            self.cache = get_cache()
             
             # Plugin manager
             self.plugin_manager = PluginManager()
             
             # State machine
-            self.state_machine = JARVISStateMachine()
+            self.state_machine = create_jarvis_state_machine()
             
             # Error handler
             self.error_handler = ErrorHandler()
@@ -322,7 +321,7 @@ class JARVIS:
             self.code_analyzer = CodeAnalyzer()
             self.backup_manager = BackupManager(backup_dir=backup_dir)
             self.safe_modifier = CodeValidator(backup_manager=self.backup_manager)
-            self.improvement_engine = LearningSystem()
+            self.improvement_engine = SelfImprovementEngine()
             
             if self.debug:
                 print("[DEBUG] Self-modification engine initialized")
@@ -419,7 +418,7 @@ class JARVIS:
         
         # Set state to initializing
         if self.state_machine:
-            self.state_machine.transition_to(JARVISState.INITIALIZING)
+            self.state_machine.transition(JarvisStates.INITIALIZING.value)
         
         # Display welcome
         self._display_welcome()
@@ -428,9 +427,9 @@ class JARVIS:
         if INSTALL_AVAILABLE and not self._is_first_run_complete():
             self._run_first_time_setup()
         
-        # Set state to running
+        # Set state to running (use IDLE after INITIALIZING)
         if self.state_machine:
-            self.state_machine.transition_to(JARVISState.RUNNING)
+            self.state_machine.transition(JarvisStates.IDLE.value)
         
         if interactive:
             self._run_interactive()
@@ -665,7 +664,7 @@ For more help, see docs/USER_GUIDE.md
         # Set state to shutdown
         if self.state_machine:
             try:
-                self.state_machine.transition_to(JARVISState.SHUTDOWN)
+                self.state_machine.transition(JarvisStates.SHUTTING_DOWN.value)
             except Exception:
                 pass
 
