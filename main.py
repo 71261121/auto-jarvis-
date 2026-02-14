@@ -61,7 +61,7 @@ except ImportError:
     CORE_AVAILABLE = False
 
 try:
-    from core.cache import Cache
+    from core.cache import MemoryCache, get_cache
 except ImportError:
     pass  # Non-critical
 
@@ -71,7 +71,7 @@ except ImportError:
     pass  # Non-critical
 
 try:
-    from core.state_machine import JARVISStateMachine, JARVISState
+    from core.state_machine import StateMachine, JarvisStates, create_jarvis_state_machine
 except ImportError:
     CORE_AVAILABLE = False
 
@@ -98,7 +98,7 @@ except ImportError:
     SELF_MOD_AVAILABLE = False
 
 try:
-    from core.self_mod.improvement_engine import LearningSystem
+    from core.self_mod.improvement_engine import SelfImprovementEngine
 except ImportError:
     pass  # Non-critical
 
@@ -247,17 +247,17 @@ class JARVIS:
         
         try:
             # Event bus for inter-module communication
-            self.event_bus = EventBus()
+            self.event_bus = EventEmitter()
             
             # Cache system
             cache_dir = os.path.expanduser("~/.jarvis/cache")
-            self.cache = CacheManager(cache_dir=cache_dir)
+            self.cache = MemoryCache()
             
             # Plugin manager
             self.plugin_manager = PluginManager()
             
             # State machine
-            self.state_machine = JARVISStateMachine()
+            self.state_machine = create_jarvis_state_machine()
             
             # Error handler
             self.error_handler = ErrorHandler()
@@ -321,8 +321,8 @@ class JARVIS:
             
             self.code_analyzer = CodeAnalyzer()
             self.backup_manager = BackupManager(backup_dir=backup_dir)
-            self.safe_modifier = SafeModifier(backup_manager=self.backup_manager)
-            self.improvement_engine = ImprovementEngine()
+            self.safe_modifier = CodeValidator()
+            self.improvement_engine = SelfImprovementEngine()
             
             if self.debug:
                 print("[DEBUG] Self-modification engine initialized")
@@ -369,7 +369,7 @@ class JARVIS:
                 self.authenticator = Authenticator()
             
             self.encryption = EncryptionManager()
-            self.sandbox = SandboxExecutor()
+            self.sandbox = ExecutionSandbox()
             self.audit_logger = AuditLogger()
             
             if self.debug:
@@ -417,7 +417,7 @@ class JARVIS:
         
         # Set state to initializing
         if self.state_machine:
-            self.state_machine.transition_to(JARVISState.INITIALIZING)
+            self.state_machine.transition(JarvisStates.INITIALIZING.value)
         
         # Display welcome
         self._display_welcome()
@@ -428,7 +428,7 @@ class JARVIS:
         
         # Set state to running
         if self.state_machine:
-            self.state_machine.transition_to(JARVISState.RUNNING)
+            self.state_machine.transition(JarvisStates.IDLE.value)
         
         if interactive:
             self._run_interactive()
@@ -663,7 +663,7 @@ For more help, see docs/USER_GUIDE.md
         # Set state to shutdown
         if self.state_machine:
             try:
-                self.state_machine.transition_to(JARVISState.SHUTDOWN)
+                self.state_machine.transition(JarvisStates.SHUTTING_DOWN.value)
             except:
                 pass
 

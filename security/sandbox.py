@@ -333,13 +333,13 @@ class RestrictedBuiltins:
         'classmethod', 'staticmethod',
     }
 
-    # Safe builtins
+    # Safe builtins (no eval, exec, compile, or other dangerous functions)
     SAFE_BUILTINS = {
-        'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytearray', 'bytes',
+        'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytes',
         'callable', 'chr', 'complex', 'dict', 'dir', 'divmod', 'enumerate',
         'filter', 'float', 'format', 'frozenset', 'getattr', 'hasattr',
         'hash', 'hex', 'id', 'int', 'isinstance', 'issubclass', 'iter',
-        'len', 'list', 'map', 'max', 'min', 'next', 'object', 'oct',
+        'len', 'list', 'map', 'max', 'min', 'next', 'oct',
         'ord', 'pow', 'print', 'range', 'repr', 'reversed', 'round',
         'set', 'setattr', 'slice', 'sorted', 'str', 'sum', 'tuple', 'type',
         'zip', 'True', 'False', 'None', 'Ellipsis', 'NotImplemented',

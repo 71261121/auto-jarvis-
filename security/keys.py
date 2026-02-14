@@ -337,8 +337,29 @@ class KeyStorage:
         if os.path.exists(master_path):
             with open(master_path, 'rb') as f:
                 self._master_key = f.read()
+            # Security warning for plaintext storage
+            import warnings
+            warnings.warn(
+                "Master key is stored in plaintext. For production use, "
+                "consider using hardware-backed key storage (HSM) or "
+                "set JARVIS_MASTER_KEY environment variable.",
+                UserWarning
+            )
         else:
-            self._master_key = secrets.token_bytes(32)
+            # Try to get master key from environment first
+            env_master_key = os.environ.get('JARVIS_MASTER_KEY')
+            if env_master_key:
+                try:
+                    self._master_key = base64.b64decode(env_master_key)
+                    if len(self._master_key) != 32:
+                        raise ValueError("Master key must be 32 bytes")
+                except Exception as e:
+                    print(f"Warning: Invalid JARVIS_MASTER_KEY: {e}")
+                    self._master_key = secrets.token_bytes(32)
+            else:
+                self._master_key = secrets.token_bytes(32)
+                print("WARNING: Generated new master key. Set JARVIS_MASTER_KEY environment variable for production.")
+            
             with open(master_path, 'wb') as f:
                 f.write(self._master_key)
             os.chmod(master_path, 0o600)
