@@ -365,7 +365,7 @@ class ConfigGenerator:
         temp_str = self._ask("Temperature (0.0-2.0)", str(config.ai.temperature))
         try:
             config.ai.temperature = max(0.0, min(2.0, float(temp_str)))
-        except:
+        except Exception:
             pass
     
     def _ask(self, prompt: str, default: str = "") -> str:
@@ -396,7 +396,7 @@ class ConfigGenerator:
             index = int(response) - 1
             if 0 <= index < len(choices):
                 return choices[index]
-        except:
+        except Exception:
             pass
         
         return default

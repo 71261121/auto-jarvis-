@@ -529,7 +529,7 @@ class DependencyInstaller:
                 timeout=5,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     def get_missing(self) -> List[str]:

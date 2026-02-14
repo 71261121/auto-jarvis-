@@ -273,7 +273,7 @@ class InputSanitizer:
         try:
             import unicodedata
             content = unicodedata.normalize('NFKC', content)
-        except:
+        except Exception:
             pass
         
         return content, warnings
@@ -349,7 +349,7 @@ class InputSanitizer:
             try:
                 json.loads(content)
                 return InputType.JSON
-            except:
+            except Exception:
                 pass
         
         # Check for code (basic heuristics)
@@ -444,7 +444,7 @@ class VoiceInputHandler:
                 timeout=5,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     def listen(
@@ -652,7 +652,7 @@ class FileInputHandler:
                     chunk = f.read(8192)
                     if b'\x00' in chunk:
                         return True
-            except:
+            except Exception:
                 pass
         return False
     

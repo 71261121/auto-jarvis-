@@ -1303,7 +1303,7 @@ class OutputFormatter:
         if isinstance(data, str):
             try:
                 data = json_module.loads(data)
-            except:
+            except Exception:
                 pass
         
         if isinstance(data, (dict, list)):

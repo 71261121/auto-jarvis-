@@ -117,7 +117,7 @@ class TerminalDetector:
             import shutil
             w = shutil.get_terminal_size().columns
             self._width = w if w > 0 else 80
-        except:
+        except Exception:
             pass
         return self._width
     
@@ -128,7 +128,7 @@ class TerminalDetector:
             import shutil
             h = shutil.get_terminal_size().lines
             self._height = h if h > 0 else 24
-        except:
+        except Exception:
             pass
         return self._height
     
@@ -183,7 +183,7 @@ class TerminalDetector:
         try:
             '█'.encode(sys.stdout.encoding or 'utf-8')
             return True
-        except:
+        except Exception:
             return False
     
     def get_info(self) -> Dict[str, Any]:
@@ -1226,7 +1226,7 @@ class InputReader:
             if history_file.exists():
                 try:
                     readline.read_history_file(str(history_file))
-                except:
+                except Exception:
                     pass
             
             # Setup completion
@@ -1250,7 +1250,7 @@ class InputReader:
         
         try:
             signal.signal(signal.SIGINT, handle_sigint)
-        except:
+        except Exception:
             pass
     
     def _readline_completer(self, text: str, state: int) -> Optional[str]:
@@ -1262,7 +1262,7 @@ class InputReader:
         try:
             line = self._readline.get_line_buffer()
             cursor = self._readline.get_begidx() + len(text)
-        except:
+        except Exception:
             line = text
             cursor = len(text)
         
@@ -1744,7 +1744,7 @@ class CLI:
             for hook in self._hooks['on_error']:
                 try:
                     hook(command, e)
-                except:
+                except Exception:
                     pass
             
             print(f"{Colors.RED}Error: {e}{Colors.RESET}")
@@ -1762,7 +1762,7 @@ class CLI:
             for hook in self._hooks['post_command']:
                 try:
                     hook(command, result, duration_ms)
-                except:
+                except Exception:
                     pass
             
             # Show duration if configured

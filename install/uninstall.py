@@ -294,7 +294,7 @@ class Uninstaller:
                     capture_output=True,
                     timeout=30,
                 )
-            except:
+            except Exception:
                 pass
     
     def get_install_size(self) -> int:
@@ -325,7 +325,7 @@ class Uninstaller:
                     try:
                         with open(info_file, 'r') as f:
                             info = json.load(f)
-                    except:
+                    except Exception:
                         pass
                 
                 # Calculate backup size

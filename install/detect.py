@@ -334,7 +334,7 @@ class EnvironmentDetector:
                     if line.startswith('PRETTY_NAME='):
                         self._info.os_name = line.split('=')[1].strip('"')
                         break
-        except:
+        except Exception:
             pass
     
     # ─────────────────────────────────────────────────────────────────────────
@@ -359,7 +359,7 @@ class EnvironmentDetector:
                 match = re.search(r'pip\s+(\d+\.\d+\.?\d*)', result.stdout)
                 if match:
                     self._info.pip_version = match.group(1)
-        except:
+        except Exception:
             pass
         
         logger.debug(f"Python {self._info.python_version} at {self._info.python_path}")
@@ -415,7 +415,7 @@ class EnvironmentDetector:
                 self._info.total_memory_mb = data.get('total', 0) // (1024 * 1024)
                 self._info.available_memory_mb = data.get('available', 0) // (1024 * 1024)
                 return
-        except:
+        except Exception:
             pass
         
         # Fallback to /proc/meminfo
@@ -438,7 +438,7 @@ class EnvironmentDetector:
                 for line in content.split('\n'):
                     if line.startswith('MemFree:'):
                         self._info.available_memory_mb = int(line.split()[1]) // 1024
-        except:
+        except Exception:
             # Default for unknown
             self._info.total_memory_mb = 2048
             self._info.available_memory_mb = 1024
@@ -458,7 +458,7 @@ class EnvironmentDetector:
             self._info.available_storage_gb = usage.free / (1024 ** 3)
             
             logger.debug(f"Storage: {self._info.total_storage_gb:.1f}GB total, {self._info.available_storage_gb:.1f}GB available")
-        except:
+        except Exception:
             self._info.total_storage_gb = 16.0
             self._info.available_storage_gb = 8.0
     
@@ -483,7 +483,7 @@ class EnvironmentDetector:
                 urllib.request.urlopen(url, timeout=timeout)
                 logger.debug(f"Network test passed: {url}")
                 return True
-            except:
+            except Exception:
                 continue
         
         logger.debug("Network test failed")
@@ -502,7 +502,7 @@ class EnvironmentDetector:
                 data = json.loads(result.stdout)
                 # Check for mobile data
                 self._info.has_mobile_data = data.get('data_state', '') == 'connected'
-        except:
+        except Exception:
             pass
         
         try:
@@ -514,7 +514,7 @@ class EnvironmentDetector:
             )
             if result.returncode == 0:
                 self._info.has_wifi = True
-        except:
+        except Exception:
             pass
     
     # ─────────────────────────────────────────────────────────────────────────
@@ -542,7 +542,7 @@ class EnvironmentDetector:
                 data = json.loads(result.stdout)
                 self._info.battery_level = data.get('percentage', 0)
                 self._info.battery_charging = data.get('status', '') == 'CHARGING'
-        except:
+        except Exception:
             pass
     
     # ─────────────────────────────────────────────────────────────────────────

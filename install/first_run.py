@@ -153,7 +153,7 @@ class FirstRunSetup:
                 with open(self._setup_file, 'r') as f:
                     data = json.load(f)
                 return data.get('complete', False)
-            except:
+            except Exception:
                 pass
         return False
     
@@ -334,7 +334,7 @@ Press Enter to continue...
             providers = ["openrouter", "openai", "anthropic", "local"]
             try:
                 provider = providers[int(choice) - 1]
-            except:
+            except Exception:
                 provider = "openrouter"
         
         print(f"\nUsing provider: {provider}")

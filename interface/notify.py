@@ -155,7 +155,7 @@ class TermuxNotifier:
                 timeout=5,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     def notify(
@@ -237,7 +237,7 @@ class TermuxNotifier:
                 timeout=5,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
 
@@ -272,7 +272,7 @@ class SoundAlerts:
             # Print bell character
             sys.stdout.write(sound)
             sys.stdout.flush()
-        except:
+        except Exception:
             pass
     
     def beep(self, count: int = 1):
