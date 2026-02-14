@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-JARVIS Phase 7 Security System Tests
+JARVIS Security Module Tests
 Comprehensive Test Suite for Security Modules
 
 Tests:
@@ -81,7 +81,7 @@ class TestRunner:
         """Run all tests"""
         self.start_time = time.time()
         print("\n" + "=" * 60)
-        print("JARVIS PHASE 7 SECURITY SYSTEM TESTS")
+        print("JARVIS SECURITY MODULE TESTS")
         print("=" * 60)
 
         for name, func in self.tests:
