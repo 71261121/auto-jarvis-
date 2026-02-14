@@ -1,0 +1,25 @@
+# JARVIS v14 Ultimate - Python Dependencies
+# Core
+python-dotenv>=1.0.0
+
+# AI/HTTP (at least one required)
+# httpx>=0.25.0
+# requests>=2.31.0
+# aiohttp>=3.9.0
+
+# Encryption
+# cryptography>=41.0.0
+
+# Logging (fallbacks)
+# loguru>=0.7.0
+# rich>=13.0.0
+
+# Termux/Mobile optimizations
+# psutil>=5.9.0
+
+# Optional: AI API
+# openai>=1.0.0
+# anthropic>=0.7.0
+
+# Note: Most dependencies have fallbacks
+# Install only what you need for your platform
