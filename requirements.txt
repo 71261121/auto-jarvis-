@@ -18,7 +18,9 @@ loguru>=0.6.0
 
 # Security & Encryption
 cryptography>=3.4.0
-pynacl>=1.5.0
+# pynacl is OPTIONAL - will use fallback if not available
+# On Termux, install with: pkg install libsodium && pip install pynacl
+# If pynacl fails, JARVIS will still work with cryptography fallback
 
 # HTTP Client
 httpx>=0.24.0
