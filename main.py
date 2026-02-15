@@ -481,7 +481,7 @@ class JARVIS:
             try:
                 # Get input
                 if self.input_handler:
-                    user_input = self.input_handler.get_input("JARVIS> ")
+                    user_input = self.input_handler.read_line("JARVIS> ")
                 else:
                     user_input = input("JARVIS> ")
                 
@@ -568,7 +568,7 @@ class JARVIS:
                 
                 # Display response
                 if self.output_formatter:
-                    formatted = self.output_formatter.format_markdown(response.content)
+                    formatted = self.output_formatter.markdown(response.content)
                     print(formatted)
                 else:
                     print(response.content)
