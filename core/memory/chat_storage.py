@@ -512,7 +512,8 @@ class ChatStorage:
         title: str = "",
         system_prompt: str = "",
         model: str = "",
-        metadata: Dict = None
+        metadata: Dict = None,
+        conversation_id: str = None
     ) -> Conversation:
         """
         Create a new conversation.
@@ -522,14 +523,18 @@ class ChatStorage:
             system_prompt: System prompt for AI
             model: Default model to use
             metadata: Additional metadata
+            conversation_id: Optional custom conversation ID
             
         Returns:
             Created Conversation object
         """
-        # Generate unique ID
-        conv_id = hashlib.sha256(
-            f"{time.time()}:{id(self)}:{title}".encode()
-        ).hexdigest()[:16]
+        # Use custom ID or generate unique ID
+        if conversation_id:
+            conv_id = conversation_id
+        else:
+            conv_id = hashlib.sha256(
+                f"{time.time()}:{id(self)}:{title}".encode()
+            ).hexdigest()[:16]
         
         now = time.time()
         

@@ -428,8 +428,9 @@ class JARVIS:
         self.running = True
         self.start_time = datetime.now()
         
-        # Set state to initializing
+        # Start the state machine first (enters initial state)
         if self.state_machine:
+            self.state_machine.start()
             self.state_machine.transition(JarvisStates.INITIALIZING.value)
         
         # Display welcome
@@ -565,8 +566,22 @@ class JARVIS:
             
             # Get conversation context
             context_id = "default"
+            
+            # Create conversation in chat_storage if needed (for FOREIGN KEY constraint)
+            if self.chat_storage:
+                existing_conv = self.chat_storage.get_conversation(context_id)
+                if not existing_conv:
+                    try:
+                        self.chat_storage.create_conversation(
+                            conversation_id=context_id,
+                            title="Default Chat",
+                            system_prompt="You are JARVIS, a helpful AI assistant."
+                        )
+                    except Exception:
+                        pass  # Conversation might already exist
+            
+            # Create context in context_manager
             if self.context_manager:
-                # Check if context exists, if not create it
                 existing = self.context_manager.get_context(context_id)
                 if not existing:
                     self.context_manager.create_context(context_id)
