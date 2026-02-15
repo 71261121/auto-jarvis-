@@ -554,7 +554,10 @@ class JARVIS:
             # Get conversation context
             context_id = "default"
             if self.context_manager:
-                context_id = self.context_manager.get_or_create_context()
+                # Check if context exists, if not create it
+                existing = self.context_manager.get_context(context_id)
+                if not existing:
+                    self.context_manager.create_context(context_id)
             
             # Send to AI
             response = self.ai_client.chat(
@@ -575,13 +578,13 @@ class JARVIS:
                 
                 # Store in chat history
                 if self.chat_storage:
-                    self.chat_storage.store_message(
-                        context_id=context_id,
+                    self.chat_storage.add_message(
+                        conversation_id=context_id,
                         role='user',
                         content=command
                     )
-                    self.chat_storage.store_message(
-                        context_id=context_id,
+                    self.chat_storage.add_message(
+                        conversation_id=context_id,
                         role='assistant',
                         content=response.content
                     )
@@ -594,7 +597,7 @@ class JARVIS:
     def _show_help(self):
         """Show help information"""
         if self.help_system:
-            self.help_system.show_overview()
+            self.help_system.show()
         else:
             print("""
 Available Commands:
@@ -650,7 +653,7 @@ For more help, see docs/USER_GUIDE.md
         # Save chat history
         if self.chat_storage:
             try:
-                self.chat_storage.flush()
+                self.chat_storage.close()
             except Exception:
                 pass
         
